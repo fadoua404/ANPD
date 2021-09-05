@@ -1,2 +1,2 @@
-# ANPR
-Automatic number-plate recognition
+# ANPD
+Automatic number-plate detection

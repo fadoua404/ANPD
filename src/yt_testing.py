@@ -1,6 +1,18 @@
 import cv2
 import pytesseract
 import numpy as np
+from PIL import Image, ImageOps
+
+def add_border(input_image, output_image, border):
+    img = Image.open(input_image)
+ 
+    if isinstance(border, int) or isinstance(border, tuple):
+        bimg = ImageOps.expand(img, border=border)
+    else:
+        raise RuntimeError('border is not an integer or tuple!')
+ 
+    bimg.save(output_image)
+ 
 
 
 
@@ -19,28 +31,33 @@ def extract_num(img_name):
     #cropping the plate
     for (x,y,w,h) in  nplate :
         a,b=(int(0.02*img.shape[0]) ,int(0.025*img.shape[1]))
-        plate=img[y+a:y+h-a , x+b:x+w-b, :]
+        cropped_img=img[y+a:y+h-a , x+b:x+w-b, :]
 
         #image processing (on the cropped image)
         kernel=np.ones((1,1) , np.uint8)
-        plate=cv2.dilate(plate,kernel,iterations=1)
-        plate=cv2.erode(plate,kernel,iterations=1)
+        cropped_img=cv2.dilate(cropped_img ,kernel,iterations=1)
+        cropped_img=cv2.erode(cropped_img,kernel,iterations=1)
+
+        
 
         # convertion the plate image to the gray scale
-        plate_gray=cv2.cvtColor(plate, cv2.COLOR_BGR2GRAY)
+        plate_gray=cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
         #convertion the plate image to black&white only 1
-        (thresh , plate)=cv2.threshold(plate_gray,127,255,cv2.THRESH_BINARY)
+        (thresh , cropped_img)=cv2.threshold(plate_gray,127,255,cv2.THRESH_BINARY)
 
-        img_item= "plate.png"
-        cv2.imwrite(img_item,plate)
+        cropped_img_loc= "plate.png"
+        cv2.imwrite(cropped_img_loc,cropped_img)
+        cv2.imshow("cropped image", cv2.imread(cropped_img_loc))
         #cv2.imshow("threshold-image" , plate)
         #cv2.imwrite("temp.png",plate)
+        #adding a border 
+        add_border(cropped_img_loc, output_image='cropped_img_bord.jpg',border=150)
 
         #convertion the plate image to a text 
-        text=pytesseract.image_to_string(plate)
+        text=pytesseract.image_to_string('cropped_img_bord.jpg')
         #deleting spaces
         text=''.join(e for e in text if e.isalnum())
-        print(text)
+        print("number is : " , text)
         
         #drawing a rectangle around the plate
         cv2.rectangle(img , (x,y) , (x+w,y+h) ,(51,51,255), 2)
@@ -48,7 +65,7 @@ def extract_num(img_name):
 
         #put the text on the rectangle
         cv2.putText(img,text,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2,cv2.LINE_AA)
-        cv2.imshow("Plate",plate)
+        #cv2.imshow("Plate",cropped_img)
 
 
 
